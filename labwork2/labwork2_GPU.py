@@ -9,8 +9,8 @@ attribs= [name.replace("CU_DEVICE_ATTRIBUTE_", "") for name in dir(enums) if nam
     
 deviceName = device.name
 print("Device name: ", deviceName)
-print(getattr(device, 'MULTIPROCESSOR_COUNT'))
-print(getattr(device, 'CLOCK_RATE'))
+print("Multiprocessor: ", getattr(device, 'MULTIPROCESSOR_COUNT'))
+print("Clock rate: ", getattr(device, 'CLOCK_RATE'))
 
 cc_cores_per_SM_dict = {
     (2,0) : 32,
@@ -37,3 +37,11 @@ total_cores = cores_per_sm*my_sms
 print("GPU compute capability: " , my_cc)
 print("GPU total number of SMs: " , my_sms)
 print("total cores: " , total_cores)
+
+from pynvml import *
+nvmlInit()
+h = nvmlDeviceGetHandleByIndex(0)
+info = nvmlDeviceGetMemoryInfo(h)
+print(f'total    : {info.total}')
+print(f'free     : {info.free}')
+print(f'used     : {info.used}')
