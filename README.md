@@ -12,5 +12,6 @@ Students are expected to:
 Student Info
 =======================
 
-* Name: MyName
+* Name: LE Nguyen Khoi
+* ID: M21.ICT.005
 
