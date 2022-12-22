@@ -29,32 +29,34 @@ imgShape = np.shape(img)
 width, height = imgShape[0], imgShape[1]
 
 pixelCount = width * height
-blockSize = 64
+blockSize = (8,8)
 gridSize  = pixelCount / blockSize
-gridSize = math.ceil(gridSize)
+# gridSize = math.ceil(gridSize)
 
-flatten = img.flatten().reshape(pixelCount,3)
-flattenShape = np.shape(flatten)
+print(gridSize)
 
-devOutput = cuda.device_array(flattenShape, np.uint8)
-devData = cuda.to_device(flatten)
+# flatten = img.flatten().reshape(pixelCount,3)
+# flattenShape = np.shape(flatten)
 
-start = timer()
-grayImage1 = grayScale_noGPU(flatten)
-print("Wihout GPU: ", timer()  - start)
+# devOutput = cuda.device_array(flattenShape, np.uint8)
+# devData = cuda.to_device(flatten)
 
-start = timer()
-grayScale_GPU[gridSize, blockSize](devData, devOutput)
-print("With GPU: ", timer() - start)
+# start = timer()
+# grayImage1 = grayScale_noGPU(flatten)
+# print("Wihout GPU: ", timer()  - start)
 
-figure, axis = plt.subplots(2)
-figure.tight_layout(pad=5.0)
+# start = timer()
+# grayScale_GPU[gridSize, blockSize](devData, devOutput)
+# print("With GPU: ", timer() - start)
 
-grayImage2 = devOutput.copy_to_host()
-grayImage2 = grayImage2.reshape(width, height, 3)
+# figure, axis = plt.subplots(2)
+# figure.tight_layout(pad=5.0)
 
-axis[0].imshow(grayImage1)
-axis[0].set_title("Without GPU")
-axis[1].imshow(grayImage2)
-axis[1].set_title("With GPU")
-plt.show()
+# grayImage2 = devOutput.copy_to_host()
+# grayImage2 = grayImage2.reshape(width, height, 3)
+
+# axis[0].imshow(grayImage1)
+# axis[0].set_title("Without GPU")
+# axis[1].imshow(grayImage2)
+# axis[1].set_title("With GPU")
+# plt.show()
