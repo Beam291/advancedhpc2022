@@ -12,56 +12,46 @@ file = 'labImg.jpg'
 filePath = 'img/' + file
 
 @cuda.jit
-def grayScale_GPU(src, dst):
+def grayScale2D_GPU(src, dst):
   tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
   tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
-  gx = np.uint8((src[tidx, 0] + src[tidx, 1] + src[tidx, 2]) / 3)
-  gy = np.uint8((src[tidy, 0] + src[tidy, 1] + src[tidy, 2]) / 3)
-  dst[tidx, 0] = dst[tidx, 1] = dst[tidx, 2] = gx
-  dst[tidy, 0] = dst[tidy, 1] = dst[tidy, 2] = gy
+  g = np.uint8((src[tidx, tidy, 0] + src[tidx, tidy, 1] + src[tidx, tidy, 2])/ 3)
+  dst[tidx, tidy, 0] = dst[tidx, tidy, 1] = dst[tidx, tidy, 2] = g
   
 def grayScale_noGPU(imgArray : np.ndarray):
-  for i in imgArray:
-    gray = np.uint8((int(i[0])+int(i[1])+int(i[2]))/3)
-    i[0] = i[1] = i[2] = gray
-  imgGray = imgArray.reshape(width, height, 3)
-  return imgGray
+  for i in range(imgArray.shape[0]):
+    for j in range(imgArray.shape[1]):
+      gray = np.uint8(int((imgArray[i, j, 0]) + int(imgArray[i, j, 1]) + int(imgArray[i, j, 2]))/3)
+      imgArray[i, j, 0] = imgArray[i, j, 1] = imgArray[i, j, 2] = gray
+  return imgArray
 
 img = mpimg.imread(filePath)
 imgShape = np.shape(img)
 width, height = imgShape[0], imgShape[1]
 
 pixelCount = width * height
-blockSize = (7,7)
-gridSize = tuple(math.ceil(pixelCount/i) for i in blockSize)
+blockSize = (32,32)
+gridSize = (math.ceil(width/blockSize[0]), math.ceil(height/blockSize[1]))
 
-# print(img.shape)
+devOutput = cuda.device_array(imgShape, np.uint8)
+devData = cuda.to_device(img)
 
-flatten = img.flatten().reshape(img.shape[0], (img.shape[1]*img.shape[2]))
-print((flatten))
-# flattenShape = np.shape(flatten)
+start = timer()
+grayImage1 = grayScale_noGPU(img)
+print("Wihout GPU: ", timer()  - start)
 
-# image2D = img.reshape()
+start = timer()
+grayScale2D_GPU[gridSize, blockSize](devData, devOutput)
+print("With GPU: ", timer() - start)
 
-# devOutput = cuda.device_array(flattenShape, np.uint8)
-# devData = cuda.to_device(flatten)
+figure, axis = plt.subplots(2)
+figure.tight_layout(pad=5.0)
 
-# start = timer()
-# grayImage1 = grayScale_noGPU(flatten)
-# print("Wihout GPU: ", timer()  - start)
+grayImage2 = devOutput.copy_to_host()
+grayImage2 = grayImage2.reshape(width, height, 3)
 
-# start = timer()
-# grayScale_GPU[gridSize, blockSize](devData, devOutput)
-# print("With GPU: ", timer() - start)
-
-# figure, axis = plt.subplots(2)
-# figure.tight_layout(pad=5.0)
-
-# grayImage2 = devOutput.copy_to_host()
-# grayImage2 = grayImage2.reshape(width, height, 3)
-
-# axis[0].imshow(grayImage1)
-# axis[0].set_title("Without GPU")
-# axis[1].imshow(grayImage2)
-# axis[1].set_title("With GPU")
-# plt.show()
+axis[0].imshow(grayImage1)
+axis[0].set_title("Without GPU")
+axis[1].imshow(grayImage2)
+axis[1].set_title("With GPU")
+plt.show()
