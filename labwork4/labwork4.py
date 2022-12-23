@@ -13,10 +13,13 @@ filePath = 'img/' + file
 
 @cuda.jit
 def grayScale_GPU(src, dst):
-    tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
-    g = np.uint8((src[tidx, 0] + src[tidx, 1] + src[tidx, 2]) / 3)
-    dst[tidx, 0] = dst[tidx, 1] = dst[tidx, 2] = g
-
+  tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
+  tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
+  gx = np.uint8((src[tidx, 0] + src[tidx, 1] + src[tidx, 2]) / 3)
+  gy = np.uint8((src[tidy, 0] + src[tidy, 1] + src[tidy, 2]) / 3)
+  dst[tidx, 0] = dst[tidx, 1] = dst[tidx, 2] = gx
+  dst[tidy, 0] = dst[tidy, 1] = dst[tidy, 2] = gy
+  
 def grayScale_noGPU(imgArray : np.ndarray):
   for i in imgArray:
     gray = np.uint8((int(i[0])+int(i[1])+int(i[2]))/3)
@@ -29,14 +32,16 @@ imgShape = np.shape(img)
 width, height = imgShape[0], imgShape[1]
 
 pixelCount = width * height
-blockSize = (8,8)
-gridSize  = pixelCount / blockSize
-# gridSize = math.ceil(gridSize)
+blockSize = (7,7)
+gridSize = tuple(math.ceil(pixelCount/i) for i in blockSize)
 
-print(gridSize)
+# print(img.shape)
 
-# flatten = img.flatten().reshape(pixelCount,3)
+flatten = img.flatten().reshape(img.shape[0], (img.shape[1]*img.shape[2]))
+print((flatten))
 # flattenShape = np.shape(flatten)
+
+# image2D = img.reshape()
 
 # devOutput = cuda.device_array(flattenShape, np.uint8)
 # devData = cuda.to_device(flatten)
