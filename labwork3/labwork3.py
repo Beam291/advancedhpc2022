@@ -41,7 +41,7 @@ devData = cuda.to_device(flatten)
 
 start = timer()
 grayImage1 = grayScale_noGPU(flatten)
-print("Wihout GPU: ", timer()  - start)
+print("Without GPU: ", timer()  - start)
 
 start = timer()
 grayScale_GPU[gridSize, blockSize](devData, devOutput)
