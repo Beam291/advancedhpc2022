@@ -4,6 +4,7 @@ import numpy as np
 from numba import cuda
 from timeit import default_timer as timer
 import math
+import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -40,18 +41,30 @@ start = timer()
 grayImage1 = grayScale_noGPU(img)
 print("Wihout GPU: ", timer()  - start)
 
-start = timer()
-grayScale2D_GPU[gridSize, blockSize](devData, devOutput)
-print("With GPU: ", timer() - start)
+# List all the thread per block can possible be use  
+tempBlockSizeList = []
+for x in range(32):
+  for y in range(32):
+    if ((x+1) * (y+1)) <= 1024:
+      tempBlockSizeList.append([x+1, y+1])
 
-figure, axis = plt.subplots(2)
-figure.tight_layout(pad=5.0)
+# Remove the thread per block that be duplicated
+blockSizeList = []
+for lst in tempBlockSizeList:
+    if sorted(lst) not in blockSizeList:
+        blockSizeList.append(lst)
 
-grayImage2 = devOutput.copy_to_host()
-grayImage2 = grayImage2.reshape(width, height, 3)
+timeResult = {}
+# Start grayscale the image from each different block size 
+for i in blockSizeList:
+  blockDim = tuple(i)
+  gridDim = (math.ceil(width/blockDim[0]), math.ceil(height/blockDim[1]))
+  start = timer()
+  grayScale2D_GPU[gridSize, blockSize](devData, devOutput)
+  end = timer() - start
+  timeResult[blockDim] = end 
 
-axis[0].imshow(grayImage1)
-axis[0].set_title("Without GPU")
-axis[1].imshow(grayImage2)
-axis[1].set_title("With GPU")
-plt.show()
+timeResultDF = pd.DataFrame(timeResult.items(), columns=['blockSize', 'timeResult'])
+print('')
+print("Table of time result each time run:")
+print(timeResultDF.head())
