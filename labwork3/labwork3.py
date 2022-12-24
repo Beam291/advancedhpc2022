@@ -51,7 +51,8 @@ figure, axis = plt.subplots(2)
 figure.tight_layout(pad=5.0)
 
 grayImage2 = devOutput.copy_to_host()
-grayImage2 = grayImage2.reshape(width, height, 3)
+# grayImage2 = grayImage2.reshape(width, height, 3)
+print(grayImage2.shape)
 
 axis[0].imshow(grayImage1)
 axis[0].set_title("Without GPU")
