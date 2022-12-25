@@ -8,28 +8,20 @@ import warnings
 warnings.filterwarnings("ignore")
 
 file = '../img/animeImg.jpg'
-# file = '../img/labImg.jpg'
-filePath =  file
+file1 = '../img/animeImg1.jpg'
 
 @cuda.jit
-def grayScale_GPU(src, dst, gamma):
+def grayScale_GPU(src, src1, dst):
     tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
     tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y
     
-    def newGamma(i, gamma):
-        n_g = i + gamma
-        if n_g > 255:
-            n_g = 255
-        elif n_g < 0:
-            n_g = 0
-        return n_g
-    
-    dst[tidx, tidy, 0] = newGamma(src[tidx, tidy, 0], gamma)
-    dst[tidx, tidy, 1] = newGamma(src[tidx, tidy, 1], gamma)
-    dst[tidx, tidy, 2] = newGamma(src[tidx, tidy, 2], gamma)
+    dst[tidx, tidy, 0] = (src[tidx, tidy, 0] + src1[tidx, tidy, 0]) / 2
+    dst[tidx, tidy, 1] = (src[tidx, tidy, 1] + src1[tidx, tidy, 1]) / 2
+    dst[tidx, tidy, 2] = (src[tidx, tidy, 2] + src1[tidx, tidy, 2]) / 2
 
 
-img = mpimg.imread(filePath)
+img = mpimg.imread(file)
+img1 = mpimg.imread(file1)
 imgShape = np.shape(img)
 width, height = imgShape[0], imgShape[1]
 
@@ -38,10 +30,11 @@ blockSize = (32,32)
 gridSize = (math.ceil(width/blockSize[0]), math.ceil(height/blockSize[1]))
 
 devOutput = cuda.device_array(imgShape, np.uint8)
+devData1 = cuda.to_device(img1)
 devData = cuda.to_device(img)
 
 start = timer()
-grayScale_GPU[gridSize, blockSize](devData, devOutput, -155)
+grayScale_GPU[gridSize, blockSize](devData, devData1, devOutput)
 print("With GPU: ", timer() - start)
 
 grayImage2 = devOutput.copy_to_host()
