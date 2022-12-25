@@ -6,9 +6,9 @@ from timeit import default_timer as timer
 import warnings
 warnings.filterwarnings("ignore")
 
-# file = 'animeImg.jpg'
-file = 'labImg.jpg'
-filePath = 'img/' + file
+# file = '../img/animeImg.jpg'
+file = '../img/labImg.jpg'
+filePath = file
 
 filterList = [
 [0, 0, 1, 2, 1, 0, 0],
