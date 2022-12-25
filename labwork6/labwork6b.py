@@ -12,20 +12,22 @@ file = '../img/animeImg.jpg'
 filePath =  file
 
 @cuda.jit
-def grayScale_GPU(src, dst, threshold):
+def grayScale_GPU(src, dst, gamma):
     tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
     tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y
-    g = (src[tidx, tidy, 0] + src[tidx, tidy, 1] + src[tidx, tidy, 2]) / 3
     
-    if threshold > 255 or threshold < 0:
-        print("The threshold is above 255 or below 0")
-        return
+    def newGamma(i, gamma):
+        n_g = i + gamma
+        if n_g > 255:
+            n_g = 255
+        elif n_g < 0:
+            n_g = 0
+        return n_g
     
-    n_g = g/255
-    n_threshold = threshold/255
-    
-    gBin = np.uint8(math.ceil((n_g - n_threshold)) * 255)
-    dst[tidx, tidy, 0] = dst[tidx, tidy, 1] = dst[tidx, tidy, 2] = gBin
+    dst[tidx, tidy, 0] = newGamma(src[tidx, tidy, 0], gamma)
+    dst[tidx, tidy, 1] = newGamma(src[tidx, tidy, 1], gamma)
+    dst[tidx, tidy, 2] = newGamma(src[tidx, tidy, 2], gamma)
+
 
 img = mpimg.imread(filePath)
 imgShape = np.shape(img)
@@ -39,7 +41,7 @@ devOutput = cuda.device_array(imgShape, np.uint8)
 devData = cuda.to_device(img)
 
 start = timer()
-grayScale_GPU[gridSize, blockSize](devData, devOutput, 155)
+grayScale_GPU[gridSize, blockSize](devData, devOutput, -155)
 print("With GPU: ", timer() - start)
 
 grayImage2 = devOutput.copy_to_host()
