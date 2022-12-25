@@ -3,10 +3,7 @@ import matplotlib.image as mpimg
 import numpy as np
 from numba import cuda
 from timeit import default_timer as timer
-import math
-import pandas as pd
 import warnings
-import cv2
 warnings.filterwarnings("ignore")
 
 # file = 'animeImg.jpg'
@@ -24,14 +21,41 @@ filterList = [
 
 filterArr = np.array(filterList)
 
-# def convCPU(imgArray : np.ndarray, filter : np.ndarray):
-#   h, w, c = imgArray.shape)
-      
-  # filterReshape = filter.reshape(7,7,3)
-  # conv  = np.multiply(imgArray, filter)
-  # Z = np.sum(conv)
+def conv2D(colorArray : np.ndarray, kernel : np.ndarray, average = False):
+  c_row, c_col = colorArray.shape
+  k_row, k_col = kernel.shape
   
-  # return Z
+  output = np.zeros(colorArray.shape)
+
+  pad_height = int((k_row - 1)/2)
+  pad_width = int((k_col -1)/2)
+  
+  padded_image = np.zeros((c_row + (2 * pad_height), c_col + (2 * pad_width)))
+  padded_image[pad_height:padded_image.shape[0] - pad_height, pad_width:padded_image.shape[1] - pad_width] = colorArray
+  
+  for row in range(c_row):
+    for col in range(c_col):
+      output[row, col] = np.sum(kernel * padded_image[row:row + k_row, col: col + k_col])
+      if average:
+        output[row, col] /= kernel.shape[0] * kernel.shape[1]
+  return output
+
+def normalize(im):
+   min, max = im.min(), im.max()
+   return (im.astype(float)-min)/(max-min)
+
+def convCPU(image : np.ndarray, kernel : np.ndarray):
+  b, g, r = image[:, :, 0], image[:, :, 1], image[:, :, 2]
+  n_b = conv2D(b, kernel, average=True)
+  n_g = conv2D(g, kernel, average=True)
+  n_r = conv2D(r, kernel, average=True)
+    
+  nb = normalize(n_b) * 255.999
+  ng = normalize(n_g) * 255.999
+  nr = normalize(n_r) * 255.999
+  
+  result = np.dstack((nb,ng,nr)).astype(np.uint8)
+  return result
 
 @cuda.jit
 def grayScale2D_GPU(src, dst):
@@ -52,58 +76,6 @@ img = mpimg.imread(filePath)
 imgShape = np.shape(img)
 height, width  = imgShape[0], imgShape[1]
 
-image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-print(image.shape)
-plt.imshow(image, cmap="gray")
+newImg = convCPU(img, filterArr)
+plt.imshow(newImg)
 plt.show()
-# print("Converted to Gray Channel. Size : {}".format(image.shape))
-
-# print(filterArr)
-# print(convCPU(img, filterArr, width, height))
-# print(type(convCPU(img, filterArr, width, height)))
-# b, g, r    = img[:, :, 0], img[:, :, 1], img[:, :, 2]
-# hello = np.multiply(b, filterArr)
-
-# print(img)
-# print(imgShape)
-
-# print(np.random.randint(2, size=(4, 3, 2)))
-
-# pixelCount = width * height
-# blockSize = (32,32)
-# gridSize = (math.ceil(width/blockSize[0]), math.ceil(height/blockSize[1]))
-
-# devOutput = cuda.device_array(imgShape, np.uint8)
-# devData = cuda.to_device(img)
-
-# start = timer()
-# grayImage1 = grayScale_noGPU(img)
-# print("Wihout GPU: ", timer()  - start)
-
-# # List all the thread per block can possible be use  
-# tempBlockSizeList = []
-# for x in range(32):
-#   for y in range(32):
-#     if ((x+1) * (y+1)) <= 1024:
-#       tempBlockSizeList.append([x+1, y+1])
-
-# # Remove the thread per block that be duplicated
-# blockSizeList = []
-# for lst in tempBlockSizeList:
-#     if sorted(lst) not in blockSizeList:
-#         blockSizeList.append(lst)
-
-# timeResult = {}
-# # Start grayscale the image from each different block size 
-# for i in blockSizeList:
-#   blockDim = tuple(i)
-#   gridDim = (math.ceil(width/blockDim[0]), math.ceil(height/blockDim[1]))
-#   start = timer()
-#   grayScale2D_GPU[gridSize, blockSize](devData, devOutput)
-#   end = timer() - start
-#   timeResult[blockDim] = end 
-
-# timeResultDF = pd.DataFrame(timeResult.items(), columns=['blockSize', 'timeResult'])
-# print('')
-# print("Table of time result each time run:")
-# print(timeResultDF.head())
