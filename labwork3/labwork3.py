@@ -7,9 +7,9 @@ import math
 import warnings
 warnings.filterwarnings("ignore")
 
-# file = 'animeImg.jpg'
-file = 'labImg.jpg'
-filePath = 'img/' + file
+# file = '../img/animeImg.jpg'
+file = '../img/labImg.jpg'
+filePath = file
 
 @cuda.jit
 def grayScale_GPU(src, dst):
