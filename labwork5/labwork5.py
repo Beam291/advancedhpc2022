@@ -57,21 +57,6 @@ def convCPU(image : np.ndarray, kernel : np.ndarray):
   result = np.dstack((nb,ng,nr)).astype(np.uint8)
   return result
 
-@cuda.jit
-def grayScale2D_GPU(src, dst):
-  tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
-  tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
-  g = np.uint8((src[tidx, tidy, 0] + src[tidx, tidy, 1] + src[tidx, tidy, 2])/ 3)
-  dst[tidx, tidy, 0] = dst[tidx, tidy, 1] = dst[tidx, tidy, 2] = g
-  
-def grayScale_noGPU(imgArray : np.ndarray):
-  for i in range(imgArray.shape[0]):
-    for j in range(imgArray.shape[1]):
-      gray = np.uint8(int((imgArray[i, j, 0]) + int(imgArray[i, j, 1]) + int(imgArray[i, j, 2]))/3)
-      imgArray[i, j, 0] = imgArray[i, j, 1] = imgArray[i, j, 2] = gray
-  return imgArray
-
-
 img = mpimg.imread(filePath)
 imgShape = np.shape(img)
 height, width  = imgShape[0], imgShape[1]

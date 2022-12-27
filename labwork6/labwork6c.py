@@ -19,7 +19,6 @@ def grayScale_GPU(src, src1, dst):
     dst[tidx, tidy, 1] = (src[tidx, tidy, 1] + src1[tidx, tidy, 1]) / 2
     dst[tidx, tidy, 2] = (src[tidx, tidy, 2] + src1[tidx, tidy, 2]) / 2
 
-
 img = mpimg.imread(file)
 img1 = mpimg.imread(file1)
 imgShape = np.shape(img)

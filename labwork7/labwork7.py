@@ -4,40 +4,80 @@ import numpy as np
 from numba import cuda
 from timeit import default_timer as timer
 import math
+import PIL
+from PIL import Image
 import warnings
 warnings.filterwarnings("ignore")
 
 file = '../img/animeImg.jpg'
-file1 = '../img/animeImg1.jpg'
+
+class preImgFunc:
+    def __init__(self, filePath : str):
+        self.filePath = filePath
+
+    def readImg(self):
+        img = mpimg.imread(self.filePath)
+        imgShape = np.shape(img)
+        height, width = imgShape[0], imgShape[1]
+        return img, imgShape, height, width
+    
+class GPUSetting:
+    def __init__(self) -> None:
+        pass
+    
+    def cudaInput(self, img : np.ndarray, shape : tuple, dataType = None):
+        devInput = cuda.to_device(img)
+        devOutput = cuda.device_array(shape, dtype= dataType)
+        return devInput, devOutput
 
 @cuda.jit
-def grayScale_GPU(src, src1, dst):
+def grayScale_GPU( src, dst):
     tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
-    tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y
+    tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
+    g = (src[tidx, tidy, 0] + src[tidx, tidy, 1] + src[tidx, tidy, 2])/ 3
+    dst[tidx, tidy] = g
+
+@cuda.reduce
+def findMax(a, b):
+    if a > b:
+        max = a
+    else:
+        max = b
+    return max
+    # return max(a,b)
+
+@cuda.jit
+def grayScaleStretch_GPU(src, dst, max, min):
+    tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
+    tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
+    n_g = ((src[tidx, tidy] - min)/(max - min)) * 255
+    dst[tidx, tidy] = n_g
     
-    dst[tidx, tidy, 0] = (src[tidx, tidy, 0] + src1[tidx, tidy, 0]) / 2
-    dst[tidx, tidy, 1] = (src[tidx, tidy, 1] + src1[tidx, tidy, 1]) / 2
-    dst[tidx, tidy, 2] = (src[tidx, tidy, 2] + src1[tidx, tidy, 2]) / 2
+@cuda.reduce
+def findMin(a, b):
+    if a < b:
+        min = a
+    else:
+        min = b
+    return min
 
-img = mpimg.imread(file)
-img1 = mpimg.imread(file1)
-imgShape = np.shape(img)
-width, height = imgShape[0], imgShape[1]
+animeImg = preImgFunc(file)
 
-pixelCount = width * height
+img, imgShape, height, width = animeImg.readImg()
 blockSize = (32,32)
-gridSize = (math.ceil(width/blockSize[0]), math.ceil(height/blockSize[1]))
+gridSize = (math.ceil(height/blockSize[0]), math.ceil(width/blockSize[1]))
 
-devOutput = cuda.device_array(imgShape, np.uint8)
-devData1 = cuda.to_device(img1)
-devData = cuda.to_device(img)
+setting = GPUSetting()
+devInput, devOutput = setting.cudaInput(img, (height, width))
+grayScale_GPU[gridSize, blockSize](devInput, devOutput)
+grayImg = devOutput.copy_to_host()
 
-start = timer()
-grayScale_GPU[gridSize, blockSize](devData, devData1, devOutput)
-print("With GPU: ", timer() - start)
+maxIns = findMax(grayImg.flatten())
+minIns = findMin(grayImg.flatten())
 
-grayImage2 = devOutput.copy_to_host()
-grayImage2 = grayImage2.reshape(width, height, 3)
+devInput1, devOutput1 = setting.cudaInput(grayImg, (height, width))
+grayScaleStretch_GPU[gridSize, blockSize](devInput1, devOutput1, maxIns, minIns)
+n_grayImg = devOutput1.copy_to_host()
 
-plt.imshow(grayImage2)
+plt.imshow(n_grayImg, cmap = 'gray')
 plt.show()

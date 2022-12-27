@@ -7,8 +7,8 @@ import math
 import warnings
 warnings.filterwarnings("ignore")
 
-# file = '../img/animeImg.jpg'
-file = '../img/labImg.jpg'
+file = '../img/animeImg.jpg'
+# file = '../img/labImg.jpg'
 filePath = file
 
 @cuda.jit
