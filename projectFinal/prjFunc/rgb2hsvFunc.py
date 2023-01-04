@@ -5,9 +5,9 @@ def RGB2HSV(src, hsvOutput):
     tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
     tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
         
-    R = src[tidx, tidy, 2]
-    G = src[tidx, tidy, 1]
-    B = src[tidx, tidy, 0]
+    R = src[tidx, tidy, 2]/255
+    G = src[tidx, tidy, 1]/255
+    B = src[tidx, tidy, 0]/255
     
     tidMax = max(R, G, B)
     tidMin = min(R, G, B)
