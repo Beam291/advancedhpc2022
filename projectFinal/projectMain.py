@@ -8,8 +8,9 @@ import warnings
 import prjFunc.rgb2hsvFunc as imgp
 warnings.filterwarnings("ignore")
 
-# file = '../img/animeImg.jpg'
-file = '../img/animeImg2.jpg'
+# file = '../img/labImg.jpg'
+file = '../img/animeImg.jpg'
+# file = '../img/animeImg2.jpg'
 
 class preImgFunc:
     def __init__(self, filePath : str):
@@ -80,21 +81,21 @@ def kuwaFilter(src, dst, vArr, height, width, winLen):
                 winDSDSum += pow((src[xValue, yValue] - vValue), 2) 
                 winDSum += src[xValue, yValue]
     
-    stanA = math.sqrt(winASDSum/15)
-    stanB = math.sqrt(winBSDSum/15)
-    stanC = math.sqrt(winCSDSum/15)
-    stanD = math.sqrt(winDSDSum/15)
+    stanA = math.sqrt(winASDSum/((winLen * winLen) - 1))
+    stanB = math.sqrt(winBSDSum/((winLen * winLen) - 1))
+    stanC = math.sqrt(winCSDSum/((winLen * winLen) - 1))
+    stanD = math.sqrt(winDSDSum/((winLen * winLen) - 1))
     
     minWin = min(stanA, stanB, stanC, stanD)
     
     if minWin == stanA:
-        dst[tidx, tidy] = (winASum/16)
+        dst[tidx, tidy] = (winASum/(winLen * winLen))
     elif minWin == stanB:
-        dst[tidx, tidy] = (winBSum/16)
+        dst[tidx, tidy] = (winBSum/(winLen * winLen))
     elif minWin == stanC:
-        dst[tidx, tidy] = (winCSum/16)
+        dst[tidx, tidy] = (winCSum/(winLen * winLen))
     elif minWin == stanD:
-        dst[tidx, tidy] = (winDSum/16)
+        dst[tidx, tidy] = (winDSum/(winLen * winLen))
     
 
 animeImg = preImgFunc(file)
