@@ -8,7 +8,7 @@ import warnings
 import prjFunc.rgb2hsvFunc as imgp
 warnings.filterwarnings("ignore")
 
-# file = '../img/labImg.jpg'
+# file = '../img/hey.jpg'
 file = '../img/animeImg.jpg'
 # file = '../img/animeImg2.jpg'
 
@@ -30,61 +30,106 @@ def kuwaFilter(src, dst, vArr, height, width, winLen):
     vValue = vArr[tidx, tidy]
     
     winASum = 0
-    winASDSum = 0
+    winVASDSum = 0
     for i in range(winLen):
         for j in range(winLen):
             xValue = tidx - j
             yValue = tidy - i
             if xValue < 0 or yValue < 0:
-                winASDSum += pow((255 - vValue), 2) 
-                winASum += 0
+                winVASDSum += 100
+                winASum += 255
             else:
-                winASDSum += pow((src[xValue, yValue] - vValue), 2) 
+                winVASDSum += vArr[xValue, yValue]
                 winASum += src[xValue, yValue]
                 
     winBSum = 0
-    winBSDSum = 0
+    winVASDSum = 0
     for i in range(winLen):
         for j in range(winLen):
             xValue = tidx + j
             yValue = tidy - i
             if xValue > width or yValue < 0:
-                winBSDSum += pow((255 - vValue), 2) 
-                winBSum += 0
+                winVASDSum += 100
+                winBSum += 255
             else:
-                winBSDSum += pow((src[xValue, yValue] - vValue), 2) 
+                winVASDSum += vArr[xValue, yValue]
                 winBSum += src[xValue, yValue]
     
     winCSum = 0
-    winCSDSum = 0
+    winVASDSum = 0
     for i in range(winLen):
         for j in range(winLen):
             xValue = tidx - j
             yValue = tidy + i
             if xValue < 0 or yValue > height:
-                winCSDSum += pow((255 - vValue), 2) 
-                winCSum += 0
+                winVASDSum += 100
+                winCSum += 255
             else:
-                winCSDSum += pow((src[xValue, yValue] - vValue), 2) 
+                winVASDSum += vArr[xValue, yValue] 
                 winCSum += src[xValue, yValue]
     
     winDSum = 0
-    winDSDSum = 0
+    winVASDSum = 0
     for i in range(winLen):
         for j in range(winLen):
             xValue = tidx + j
             yValue = tidy + i
             if xValue > width or yValue > height:
-                winDSDSum += pow((255 - vValue), 2) 
-                winDSum += 0
+                winVASDSum += 100
+                winDSum += 255
             else:
-                winDSDSum += pow((src[xValue, yValue] - vValue), 2) 
+                winVASDSum += vArr[xValue, yValue]
                 winDSum += src[xValue, yValue]
     
-    stanA = math.sqrt(winASDSum/((winLen * winLen) - 1))
-    stanB = math.sqrt(winBSDSum/((winLen * winLen) - 1))
-    stanC = math.sqrt(winCSDSum/((winLen * winLen) - 1))
-    stanD = math.sqrt(winDSDSum/((winLen * winLen) - 1))
+    meanVA = winVASDSum/((winLen * winLen))
+    meanVB = winVASDSum/((winLen * winLen))
+    meanVC = winVASDSum/((winLen * winLen))
+    meanVD = winVASDSum/((winLen * winLen))
+    
+    winVASDSumPow = 0
+    for i in range(winLen):
+        for j in range(winLen):
+            xValue = tidx - j
+            yValue = tidy - i
+            if xValue < 0 or yValue < 0:
+                winVASDSumPow += pow((0 - meanVA),2)
+            else:
+                winVASDSumPow += pow((vArr[xValue, yValue] - meanVA),2)
+                
+    winVBSDSumPow = 0
+    for i in range(winLen):
+        for j in range(winLen):
+            xValue = tidx + j
+            yValue = tidy - i
+            if xValue > width or yValue < 0:
+                winVBSDSumPow += pow((0 - meanVB),2)
+            else:
+                winVBSDSumPow += pow((vArr[xValue, yValue] - meanVB),2)
+    
+    winVCSDSumPow = 0
+    for i in range(winLen):
+        for j in range(winLen):
+            xValue = tidx - j
+            yValue = tidy + i
+            if xValue < 0 or yValue > height:
+                winVCSDSumPow += pow((0 - meanVC),2)
+            else:
+                winVCSDSumPow += pow((vArr[xValue, yValue] - meanVC),2)
+    
+    winVDSDSumPow = 0
+    for i in range(winLen):
+        for j in range(winLen):
+            xValue = tidx + j
+            yValue = tidy + i
+            if xValue > width or yValue > height:
+                winVDSDSumPow += pow((0 - meanVD),2)
+            else:
+                winVDSDSumPow += pow((vArr[xValue, yValue] - meanVD),2)
+    
+    stanA = math.sqrt(winVASDSumPow/((winLen * winLen)))
+    stanB = math.sqrt(winVBSDSumPow/((winLen * winLen)))
+    stanC = math.sqrt(winVCSDSumPow/((winLen * winLen)))
+    stanD = math.sqrt(winVDSDSumPow/((winLen * winLen)))
     
     minWin = min(stanA, stanB, stanC, stanD)
     
@@ -100,7 +145,7 @@ def kuwaFilter(src, dst, vArr, height, width, winLen):
 
 animeImg = preImgFunc(file)
 img, imgShape, height, width = animeImg.readImg()
-winLen = 4
+winLen = 5
 
 devRGBInput = cuda.to_device(img)
 devHSVOutput = cuda.device_array(imgShape, np.uint8)
@@ -138,6 +183,4 @@ kuwaImg = np.dstack((n_b, n_g, n_r))
 
 plt.imshow(kuwaImg)
 plt.show()
-# hsvImg = devHSVOutput.copy_to_host()
-# vArr = hsvImg[:, :, 2]
 
