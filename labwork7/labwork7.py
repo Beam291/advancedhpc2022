@@ -37,6 +37,13 @@ def grayScale_GPU( src, dst):
     g = (src[tidx, tidy, 0] + src[tidx, tidy, 1] + src[tidx, tidy, 2])/ 3
     dst[tidx, tidy] = g
 
+@cuda.jit
+def grayScaleStretch_GPU(src, dst, max, min):
+    tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
+    tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
+    n_g = ((src[tidx, tidy] - min)/(max - min)) * 255
+    dst[tidx, tidy] = n_g
+
 @cuda.reduce
 def findMax(a, b):
     if a > b:
@@ -44,14 +51,6 @@ def findMax(a, b):
     else:
         max = b
     return max
-    # return max(a,b)
-
-@cuda.jit
-def grayScaleStretch_GPU(src, dst, max, min):
-    tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
-    tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
-    n_g = ((src[tidx, tidy] - min)/(max - min)) * 255
-    dst[tidx, tidy] = n_g
     
 @cuda.reduce
 def findMin(a, b):
@@ -62,8 +61,8 @@ def findMin(a, b):
     return min
 
 animeImg = preImgFunc(file)
-
 img, imgShape, height, width = animeImg.readImg()
+
 blockSize = (32,32)
 gridSize = (math.ceil(height/blockSize[0]), math.ceil(width/blockSize[1]))
 

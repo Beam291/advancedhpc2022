@@ -37,7 +37,6 @@ grayScale_GPU[gridSize, blockSize](devData, devData1, devOutput)
 print("With GPU: ", timer() - start)
 
 grayImage2 = devOutput.copy_to_host()
-grayImage2 = grayImage2.reshape(width, height, 3)
 
 plt.imshow(grayImage2)
 plt.show()
