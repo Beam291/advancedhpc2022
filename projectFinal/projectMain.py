@@ -8,7 +8,8 @@ import warnings
 import prjFunc.rgb2hsvFunc as imgp
 warnings.filterwarnings("ignore")
 
-file = '../img/animeImg.jpg'
+# file = '../img/animeImg.jpg'
+file = '../img/animeImg2.jpg'
 
 class preImgFunc:
     def __init__(self, filePath : str):
