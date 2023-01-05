@@ -118,3 +118,61 @@ def kuwaFilter_GPU(src, dst, vArr, height, width, winLen):
         dst[tidx, tidy] = (winCSum/(winLen * winLen))
     elif minWin == stanD:
         dst[tidx, tidy] = (winDSum/(winLen * winLen))
+      
+@cuda.jit
+def kuwaFilter_GPU_WithoutMemory(src, dst, vArr, height, width, winLen):
+    tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
+    tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y
+    
+    def winDow(src, vArr, c_x, c_y, n_x, n_y , height, width, winLen):
+        winSum = 0
+        winVSum = 0
+        population = winLen * winLen
+
+        for i in range(c_x, n_x):
+            for j in range(c_y, n_y):
+                if i < 0 or i > width or j < 0 or j > height:
+                    winSum += 255
+                    winVSum += 100
+                else:
+                    winSum += src[i, j]
+                    winVSum += vArr[i,j]
+
+        winMean = winSum/population
+        winVMean = winVSum/population
+        
+        winVSDSum = 0
+        for i in range(c_x, n_x):
+            for j in range(c_y, n_y):
+                if i < 0 or i > width or j < 0 or j > height:
+                    winVSDSum += pow((0 - winVMean), 2)
+                else:
+                    winVSDSum += pow((vArr[i, j] - winVMean), 2)
+        
+        winVSD = math.sqrt(winVSDSum/population)
+
+        return winMean, winVSD
+    
+    winAmean, winVASD = winDow(src, vArr, tidx, tidy, tidx - winLen, tidy - winLen, width, height, winLen)
+    winBmean, winVBSD = winDow(src, vArr, tidx, tidy, tidx + winLen, tidy - winLen, width, height, winLen)
+    winCmean, winVCSD = winDow(src, vArr, tidx, tidy, tidx - winLen, tidy + winLen, width, height, winLen)
+    winDmean, winVDSD = winDow(src, vArr, tidx, tidy, tidx + winLen, tidy + winLen, width, height, winLen)
+
+    minWin = min(winVASD, winVBSD, winVCSD, winVDSD)
+
+    dst[tidx, tidy] = winAmean
+    
+    # if minWin == winVASD:
+    #     dst[tidx, tidy] = winAmean
+    # elif minWin == winVBSD:
+    #     dst[tidx, tidy] = winBmean
+    # elif minWin == winVCSD:
+    #     dst[tidx, tidy] = winCmean
+    # elif minWin == winVDSD:
+    #     dst[tidx, tidy] = winDmean
+        
+@cuda.jit
+def kuwaFilter_GPU_WithMemory(src, dst, vArr, height, width, winLen):
+    tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
+    tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y
+
