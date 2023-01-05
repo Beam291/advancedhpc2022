@@ -9,8 +9,8 @@ import prjFunc.rgb2hsvFunc as imgp
 import prjFunc.kuwaFunc as kuwa
 warnings.filterwarnings("ignore")
 
-file = '../img/animeImg.jpg'
-# file = '../img/labImg.jpg'
+# file = '../img/animeImg.jpg'
+file = '../img/yuru.jpg'
 
 class preImgFunc:
     def __init__(self, filePath : str):
@@ -41,24 +41,30 @@ hsvImg = devHSVOutput.copy_to_host()
 vArr = np.ascontiguousarray(hsvImg[:,:,2])
 vArrInput = cuda.to_device(vArr)
 
-b,g,r = img[:,:,0], img[:,:,1], img[:,:,2]
+b, g, r = img[:,:,0], img[:,:,1], img[:,:,2]
+
+# start = timer()
+# devBInput = cuda.to_device(np.ascontiguousarray(b))
+# devBOutput = cuda.device_array((height, width), np.uint8)
+# kuwa.kuwaFilter_GPU[gridSize, blockSize](devBInput, devBOutput, vArrInput, height, width, winLen)
+# n_b = devBOutput.copy_to_host()
+
+# devGInput = cuda.to_device(np.ascontiguousarray(g))
+# devGOutput = cuda.device_array((height, width), np.uint8)
+# kuwa.kuwaFilter_GPU[gridSize, blockSize](devGInput, devGOutput, vArrInput, height, width, winLen)
+# n_g = devGOutput.copy_to_host()
+
+# devRInput = cuda.to_device(np.ascontiguousarray(r))
+# devROutput = cuda.device_array((height, width), np.uint8)
+# kuwa.kuwaFilter_GPU[gridSize, blockSize](devRInput, devROutput, vArrInput, height, width, winLen)
+# n_r = devROutput.copy_to_host()
+# print("Kuwahara Filter Time: ", timer() - start)
 
 start = timer()
 devBInput = cuda.to_device(np.ascontiguousarray(b))
 devBOutput = cuda.device_array((height, width), np.uint8)
-kuwa.kuwaFilter[gridSize, blockSize](devBInput, devBOutput, vArrInput, height, width, winLen)
+kuwa.kuwaFilter_GPU_WithoutMemory[gridSize, blockSize](devBInput, devBOutput, vArrInput, height, width, winLen)
 n_b = devBOutput.copy_to_host()
-
-devGInput = cuda.to_device(np.ascontiguousarray(g))
-devGOutput = cuda.device_array((height, width), np.uint8)
-kuwa.kuwaFilter[gridSize, blockSize](devGInput, devGOutput, vArrInput, height, width, winLen)
-n_g = devGOutput.copy_to_host()
-
-devRInput = cuda.to_device(np.ascontiguousarray(r))
-devROutput = cuda.device_array((height, width), np.uint8)
-kuwa.kuwaFilter[gridSize, blockSize](devRInput, devROutput, vArrInput, height, width, winLen)
-n_r = devROutput.copy_to_host()
-print("Kuwahara Filter Time: ", timer() - start)
 
 kuwaImg = np.dstack((n_b, n_g, n_r))
 

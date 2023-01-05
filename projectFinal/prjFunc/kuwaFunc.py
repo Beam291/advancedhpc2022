@@ -2,11 +2,9 @@ from numba import cuda
 import math
 
 @cuda.jit
-def kuwaFilter(src, dst, vArr, height, width, winLen):
+def kuwaFilter_GPU(src, dst, vArr, height, width, winLen):
     tidx = cuda.threadIdx.x + cuda.blockIdx.x * cuda.blockDim.x
     tidy = cuda.threadIdx.y + cuda.blockIdx.y * cuda.blockDim.y 
-    
-    vValue = vArr[tidx, tidy]
     
     winASum = 0
     winVASDSum = 0
