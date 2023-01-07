@@ -7,8 +7,8 @@ import math
 import warnings
 warnings.filterwarnings("ignore")
 
-# file = '../img/animeImg.jpg'
-file = '../img/cat.jpg'
+file = '../img/animeImg.jpg'
+# file = '../img/cute-cat.jpg'
 
 class preImgFunc:
     def __init__(self, filePath : str):

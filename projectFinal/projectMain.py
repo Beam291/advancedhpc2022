@@ -14,7 +14,6 @@ warnings.filterwarnings("ignore")
 file = '../img/yuru.jpg'
 # file = '../img/lion.jpg'
 # file = '../img/land.jpg'
-# file = '../img/cat.jpg'
 
 class preImgFunc:
     def __init__(self, filePath : str):
@@ -28,7 +27,6 @@ class preImgFunc:
     
 animeImg = preImgFunc(file)
 img, imgShape, height, width = animeImg.readImg()
-winLen = 9
 
 devRGBInput = cuda.to_device(img)
 devHSVOutput = cuda.device_array(imgShape, np.uint8)
@@ -51,6 +49,7 @@ b, g, r = img[:,:,0], img[:,:,1], img[:,:,2]
 # kuwaImgCPU = kuwa.kuwaFilter_CPU(img, imgShape, vArr, height, width, winLen)
 # print("Kuwahara Filter CPU Time: ", timer() - start)
 
+winLen = 6
 start = timer()
 devBInput = cuda.to_device(np.ascontiguousarray(b))
 devBOutput = cuda.device_array((height, width), np.uint8)
@@ -67,7 +66,28 @@ devROutput = cuda.device_array((height, width), np.uint8)
 kuwa.kuwaFilter_GPU[gridSize, blockSize](devRInput, devROutput, vArrInput, height, width, winLen)
 n_r = devROutput.copy_to_host()
 print("Kuwahara Filter Time: ", timer() - start)
-    
+
 kuwaImgGPU = np.dstack((n_b, n_g, n_r))
+
+# winLen_1 = 4
+# start = timer()
+# devBInput = cuda.to_device(np.ascontiguousarray(b))
+# devBOutput_1 = cuda.device_array((height, width), np.uint8)
+# kuwa.kuwaFilter_GPU_WithMemory[gridSize, blockSize](devBInput, devBOutput_1, vArrInput, height, width, winLen_1)
+# n_b_1 = devBOutput_1.copy_to_host()
+
+# devGInput = cuda.to_device(np.ascontiguousarray(g))
+# devGOutput_1 = cuda.device_array((height, width), np.uint8)
+# kuwa.kuwaFilter_GPU_WithMemory[gridSize, blockSize](devGInput, devGOutput_1, vArrInput, height, width, winLen_1)
+# n_g_1 = devGOutput_1.copy_to_host()
+
+# devRInput = cuda.to_device(np.ascontiguousarray(r))
+# devROutput_1 = cuda.device_array((height, width), np.uint8)
+# kuwa.kuwaFilter_GPU_WithMemory[gridSize, blockSize](devRInput, devROutput_1, vArrInput, height, width, winLen_1)
+# n_r_1 = devROutput_1.copy_to_host()
+# print("Kuwahara Filter Time: ", timer() - start)
+    
+# kuwaImgGPU_1 = np.dstack((n_b_1, n_g_1, n_r_1))
+
 plt.imshow(kuwaImgGPU)
 plt.show()
